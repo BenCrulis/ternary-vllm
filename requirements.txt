@@ -1,0 +1,11 @@
+wheel
+transformers
+datasets
+tqdm
+torch
+torchvision
+einops
+accelerate
+flash_attn
+tensorflow==2.10.1
+larq
