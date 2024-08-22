@@ -4,8 +4,10 @@ datasets
 tqdm
 torch
 torchvision
+transformers
 einops
 accelerate
 flash_attn
-tensorflow==2.10.1
+tensorflow==2.16.2
 larq
+psutil
