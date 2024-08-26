@@ -31,22 +31,27 @@ from utils.scripting import get_var
 def parse_args():
     parser = ap.ArgumentParser()
     parser.add_argument("--variant", type=str, default="matmul", help="one of {continuous, tf, matmul, unpack}")
+    parser.add_argument("-c", "--checkpoint", type=Path, default=Path("checkpoints/moondream-q2-1-1-001"), help="path to checkpoint")
+    parser.add_argument("--no-tf-quant", action="store_true", help="disable tflite quantization")
     parser.add_argument("--llavads", type=str, default=None)
     parser.add_argument("--coco", type=str, default=None)
     parser.add_argument("--model", type=str, default="vikhyatk/moondream2")
-    parser.add_argument("--revision", type=str, default="2024-05-08")
+    parser.add_argument("--revision", type=str, default="2024-07-23")
     return parser.parse_args()
 
 args = parse_args()
 
 variant = args.variant
+tf_quant = not args.no_tf_quant
+if not tf_quant:
+    print("disabling TFLite converter quantization")
 
 print(f"starting conversion of the {variant} variant")
 
 # MODEL = args.model
-MODEL = Path("checkpoints/moondream-q2-1-1-001")
+MODEL = args.checkpoint
 
-MD_REVISION = "2024-05-08"
+MD_REVISION = args.revision
 
 ternary = "continuous" not in variant.lower()
 
@@ -144,8 +149,11 @@ converter.target_spec.supported_ops = [
     tf.lite.OpsSet.SELECT_TF_OPS, # enable TensorFlow ops.
     # tf.lite.OpsSet.EXPERIMENTAL_TFLITE_BUILTINS_ACTIVATIONS_INT16_WEIGHTS_INT8
 ]
+# converter.target_spec.supported_types = {tf.dtypes.float32}
 converter.allow_custom_ops = True
-converter.optimizations = [tf.lite.Optimize.DEFAULT]
+if tf_quant:
+    print("activating TFLite default optimizations")
+    converter.optimizations = [tf.lite.Optimize.DEFAULT]
 
 print("converting model to TFLite")
 tflite_model = converter.convert()
@@ -154,10 +162,16 @@ print("done.")
 tf.random.set_seed(1234)
 inp = tf.random.uniform((1, 10), maxval=50000, dtype=tf.int64)
 
-filename = f"moondream-q2-{variant}.tflite"
-
-if not ternary:
-    filename = "moondream-tf.tflite"
+if ternary:
+    if tf_quant:
+        filename = f"moondream-q2-{variant}.tflite"
+    else:
+        filename = f"moondream-q2-{variant}-no-tf-quant.tflite"
+else:
+    if tf_quant:
+        filename = "moondream-tf.tflite"
+    else:
+        filename = f"moondream-tf-no-tf-quant.tflite"
 
 with open(filename, "wb") as f:
     print(f"writing tflite model to disk ({filename})")

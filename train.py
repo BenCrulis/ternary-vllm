@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument("--llavads", type=str, default=None)
     parser.add_argument("--coco", type=str, default=None)
     parser.add_argument("--model", type=str, default="vikhyatk/moondream2")
-    parser.add_argument("--revision", type=str, default="2024-05-08")
+    parser.add_argument("--revision", type=str, default="2024-07-23")
     parser.add_argument("--deactivate-quantization", action="store_true")
     parser.add_argument("--quantization", type=str, default="binary")
     parser.add_argument("--start-skip", type=int, default=1)
@@ -69,7 +69,7 @@ DTYPE = torch.float32 if DEVICE == "cpu" or args.force_float32 else torch.float1
 if args.bfloat:
     DTYPE = torch.bfloat16
 # DTYPE = torch.float16
-MD_REVISION = "2024-05-08"
+MD_REVISION = args.revision
 
 QUANTIZED = not args.deactivate_quantization
 QUANTIZATION = args.quantization
@@ -149,14 +149,12 @@ collate_fn = get_collate_fn(moondream.vision_encoder, tokenizer, IMG_TOKENS, ANS
 def compute_loss(batch):
     images, tokens, labels, attn_mask = batch
 
-    images = images.to(DEVICE)
     tokens = tokens.to(DEVICE)
     labels = labels.to(DEVICE)
     attn_mask = attn_mask.to(DEVICE)
 
     with torch.no_grad():
-        img_embs = moondream.vision_encoder.encoder(images)
-        img_embs = moondream.vision_encoder.projection(img_embs)
+        img_embs = moondream.vision_encoder(images)
 
     tok_embs = moondream.text_model.get_input_embeddings()(tokens)
     inputs_embeds = torch.cat((tok_embs[:, 0:1, :], img_embs, tok_embs[:, 1:, :]), dim=1)

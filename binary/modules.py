@@ -202,12 +202,13 @@ def linear_to_quantized(model: nn.Module, quantization="binary", scaling="none",
 
                     sb.scale.data[:] = (m_pos - m_neg) / (mod.weight.shape[1] * mod.weight.shape[0])
                 elif neuron_scale == "independent":
-                    pos_mask = mod.weight > 0
-                    neg_mask = mod.weight < 0
-                    m_pos = (pos_mask * mod.weight).float().sum(dim=1) # casting to .float() to avoid +inf
-                    m_neg = (neg_mask * mod.weight).float().sum(dim=1)
+                    # pos_mask = mod.weight > 0
+                    # neg_mask = mod.weight < 0
+                    # m_pos = (pos_mask * mod.weight).float().sum(dim=1) # casting to .float() to avoid +inf
+                    # m_neg = (neg_mask * mod.weight).float().sum(dim=1)
 
-                    sb.scale.data[:] = (m_pos - m_neg) / mod.weight.shape[1]
+                    # sb.scale.data[:] = (m_pos - m_neg) / mod.weight.shape[1]
+                    sb.scale.data[:] = mod.weight.abs().mean(1)
                 else:
                     raise ValueError(f"Unknown neuron scaling method: {neuron_scale}")
 

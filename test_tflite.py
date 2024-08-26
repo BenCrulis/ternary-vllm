@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument("--llavads", type=str, default=None)
     parser.add_argument("--coco", type=str, default=None)
     parser.add_argument("--model", type=str, default="vikhyatk/moondream2")
-    parser.add_argument("--revision", type=str, default="2024-05-08")
+    parser.add_argument("--revision", type=str, default="2024-07-23")
     return parser.parse_args()
 
 args = parse_args()
@@ -34,7 +34,7 @@ args = parse_args()
 # MODEL = args.model
 MODEL = Path("checkpoints/moondream-q2-1-1-001")
 
-MD_REVISION = "2024-05-08"
+MD_REVISION = args.revision
 
 
 DTYPE=torch.float32

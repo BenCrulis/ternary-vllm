@@ -6,6 +6,7 @@ from PIL import Image
 
 import torch
 from torch.utils.data import Dataset
+from torchvision.transforms.functional import resize
 
 
 class LLavaDS(Dataset):
@@ -58,7 +59,7 @@ class LLavaDS(Dataset):
 def get_collate_fn(vision_encoder, tokenizer, IMG_TOKENS, ANSWER_EOS, DTYPE):
     def f(batch):
         images = [sample['image'] for sample in batch]
-        images = torch.stack(vision_encoder.preprocess(images))
+        images = [vision_encoder.preprocess(image) for image in images]
 
         labels_acc = []
         tokens_acc = []
@@ -100,7 +101,7 @@ def get_collate_fn(vision_encoder, tokenizer, IMG_TOKENS, ANSWER_EOS, DTYPE):
             attn_mask_acc.append([1] * len_i + [0] * pad_i)
 
         return (
-            images.to(dtype=DTYPE),
+            images,
             torch.stack([torch.tensor(t, dtype=torch.long) for t in tokens_acc]),
             torch.stack([torch.tensor(l, dtype=torch.long) for l in labels_acc]),
             torch.stack([torch.tensor(a, dtype=torch.bool) for a in attn_mask_acc]),
