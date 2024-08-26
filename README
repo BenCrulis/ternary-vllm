@@ -1,0 +1,8 @@
+# Moondream Compression Project
+
+
+example command:
+
+```
+mprof run --interval 0.01 --python -C -o results/q2-matmul_details.dat python eval.py -f moondream-q2-matmul.tflite --subset detail_23k.json --out results/q2-matmul_details.csv
+```
