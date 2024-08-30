@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument("-f", "--file", type=Path, default="moondream-q2-matmul.tflite")
     parser.add_argument("--llavads", type=str, default=None)
     parser.add_argument("--coco", type=str, default=None)
+    parser.add_argument("-t", "--threads", type=int, default=None, help="number of threads for the TFLite interpreter")
     parser.add_argument("--model", type=str, default="vikhyatk/moondream2")
     parser.add_argument("--revision", type=str, default="2024-07-23")
     return parser.parse_args()
@@ -62,9 +63,11 @@ val_file = "detail_23k.json"
 
 val_ds = LLavaDS(LLavaDS_PATH, COCO_PATH, file=val_file)
 
+print(f"using {args.threads} thread(s)")
+
 # interpreter_object = Interpreter # LCE interpreter
 # interpreter_object = lite.Interpreter # TF interpreter
-interpreter_object = lambda model_path: InterpreterWithCustomOps([register_tflite_all_ops], model_path=model_path)
+interpreter_object = lambda model_path: InterpreterWithCustomOps([register_tflite_all_ops], model_path=model_path, num_threads=args.threads)
 
 # tflite_model_path = "moondream-q2-tf.tflite"
 # tflite_model_path = "moondream-q2-larq.tflite"
