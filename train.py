@@ -262,7 +262,7 @@ if DEVICE != "cpu":
         # print(e)
         # print("got an error during sampling process, proceeding to training anyway")
 
-i = 0
+i = -1
 for epoch in range(EPOCHS):
     for batch in tqdm(dataloaders["train"], desc=f"Epoch {epoch + 1}/{EPOCHS}"):
         i += 1
