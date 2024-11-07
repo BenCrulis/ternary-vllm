@@ -206,3 +206,7 @@ val_0.jpg
 retrieve_from.sh
 send_to.sh
 *.bazel.lock
+
+results*
+*.csv
+*.dat
