@@ -56,6 +56,7 @@ def parse_args():
     parser.add_argument("-n", "--samples", type=int, default=100)
     parser.add_argument("-t", "--threads", type=int, default=None, help="number of threads for the TFLite interpreter")
     parser.add_argument("--seed", type=int, default=1234)
+    parser.add_argument("--only-init", action="store_true", help="do not load weights for quantized pytorch models (ternary/binary)")
     parser.add_argument("--out", type=Path, default=Path("results/results.csv"))
     parser.add_argument("--dry", action="store_true", help="do not write anything to disk")
     return parser.parse_args()
@@ -117,14 +118,14 @@ if is_tflite_model:
 elif not is_base_model:
     if is_binary:
         print("loading binary model")
-        moondream, tokenizer = load_binary_model(checkpoint_path, MD_REVISION)
+        moondream, tokenizer, _ = load_binary_model(checkpoint_path, MD_REVISION, dont_load_weights=args.only_init)
     else:
         print("loading ternary model")
-        moondream, tokenizer = load_ternary_model(checkpoint_path, MD_REVISION)
+        moondream, tokenizer, _ = load_ternary_model(checkpoint_path, MD_REVISION, dont_load_weights=args.only_init)
 else:
 
     print("loading base model")
-    moondream, tokenizer = load_base_model(MD_REVISION)
+    moondream, tokenizer, _ = load_base_model(MD_REVISION)
 
 
 gc.collect()
