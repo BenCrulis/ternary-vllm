@@ -28,7 +28,7 @@ for name, mod in phimodel.named_modules():
     print(name)
 
     if True or "lm_head" not in name: # and "transformer.h.0" not in name:
-        converted = linear_to_quantized(mod)
+        converted, _ = linear_to_quantized(mod)
         if converted:
             print(f"Converted {name} to ScaledBinaryLinear")
         # if isinstance(mod, nn.Linear):

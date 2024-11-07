@@ -31,7 +31,7 @@ from utils.scripting import get_var
 def parse_args():
     parser = ap.ArgumentParser()
     parser.add_argument("--variant", type=str, default="matmul", help="one of {continuous, tf, matmul, unpack}")
-    parser.add_argument("-c", "--checkpoint", type=Path, default=Path("checkpoints/moondream-q2-1-1-001"), help="path to checkpoint")
+    parser.add_argument("-c", "--checkpoint", type=Path, default=Path("checkpoints/moondream-q2-1-1"), help="path to checkpoint")
     parser.add_argument("--no-tf-quant", action="store_true", help="disable tflite quantization")
     parser.add_argument("--llavads", type=str, default=None)
     parser.add_argument("--coco", type=str, default=None)
@@ -75,7 +75,7 @@ moondream: nn.Module = AutoModelForCausalLM.from_pretrained(
 if ternary:
     print("setting ternary layers")
     quantize_moondream(moondream, start_skip=1, last_skip=1,
-                        quantization="ternary", scaling="none", neuron_scale="none", remove_blocks=None)
+                        quantization="ternary", scaling="none", neuron_scale="none", remove_blocks=None, kmeans_iter=0)
     print(f"loading model from {MODEL}")
     with safetensors.safe_open(MODEL / "model.safetensors", "pt") as md_weights:
         for name, p in moondream.named_parameters():

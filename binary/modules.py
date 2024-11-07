@@ -188,6 +188,9 @@ def compute_smooth_binary_stats(model, eps=1e-3):
 
 def linear_to_quantized(model: nn.Module, quantization="binary", scaling="none", neuron_scale="uniform", kmeans_iter=10):
     converted = False
+
+    quantization_errors = []
+
     for name, mod in model.named_children():
         if isinstance(mod, nn.Linear):
             if quantization == "binary":
@@ -281,12 +284,23 @@ def linear_to_quantized(model: nn.Module, quantization="binary", scaling="none",
                 abs_w = mod.weight.abs().detach()
                 if neuron_scale == "uniform":
                     abs_w = abs_w.flatten().unsqueeze(0)
+                
+                def quantization_error(m):
+                    scale = 1.0 / m
+                    quantized = ((mod.weight > 0.5).float() - (mod.weight < -0.5).float()) * scale[:, None]
+                    return (mod.weight - quantized).square().mean()
 
                 m = abs_w.detach().mean(dim=1)
+                layer_quantization_error = quantization_error(m)
+                print(f"Initial quantization error: {layer_quantization_error}")
                 for i in range(kmeans_iter):
                     d = abs_w - m[:, None]
                     mask = d > - m[:, None] / 2.0
                     m = (abs_w * mask).float().sum(dim=1) / mask.sum(dim=1)
+                    layer_quantization_error = quantization_error(m)
+                    print(f"Iteration {i+1}: {layer_quantization_error}")
+                
+                quantization_errors.append(layer_quantization_error.item())
 
                 scale = 1.0 / m
 
@@ -297,4 +311,5 @@ def linear_to_quantized(model: nn.Module, quantization="binary", scaling="none",
                     st.bias.data = mod.bias.data
                 model.add_module(name, st)
                 converted = True
-    return converted
+    
+    return converted, quantization_errors

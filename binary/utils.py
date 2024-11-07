@@ -4,7 +4,14 @@ from binary.modules import (ScaledBinaryLinear, ScaledBinary01Linear, ScaledTern
     linear_to_quantized)
 
 
-def quantize_moondream(model, start_skip=1, last_skip=0, quantization="binary", scaling="none", neuron_scale="uniform", remove_blocks=None):
+def quantize_moondream(model,
+                       start_skip=1,
+                       last_skip=0,
+                       quantization="binary",
+                       scaling="none",
+                       neuron_scale="uniform",
+                       remove_blocks=None,
+                       kmeans_iter=10):
     phimodel = model.text_model
 
     n_params_orig = sum(p.numel() for p in phimodel.parameters())
@@ -14,11 +21,14 @@ def quantize_moondream(model, start_skip=1, last_skip=0, quantization="binary", 
     layers_to_skip = [f"transformer.h.{i}." for i in range(start_skip)] +\
                     [f"transformer.h.{n_blocks-1-i}." for i in range(last_skip)]
 
+    quantization_errors = []
+
     for name, mod in phimodel.named_modules():
         print(name)
 
         if "lm_head" not in name and not any([skipped in name for skipped in layers_to_skip]):
-            converted = linear_to_quantized(mod, quantization=quantization, scaling=scaling, neuron_scale=neuron_scale)
+            converted, qerrs = linear_to_quantized(mod, quantization=quantization, scaling=scaling, neuron_scale=neuron_scale, kmeans_iter=kmeans_iter)
+            quantization_errors.extend(qerrs)
             if converted:
                 print(f"Converted {name} to {quantization}")
             # if isinstance(mod, nn.Linear):
@@ -60,7 +70,9 @@ def quantize_moondream(model, start_skip=1, last_skip=0, quantization="binary", 
     # estimated_binary_model_size_gb = (n_params - n_bin_params) * 2 / 1024 ** 3 + n_bin_params / 8 / 1024 ** 3
     estimated_quantized_model_size_gb = n_bits / 8 / 1024 ** 3
 
+    avg_quantization_error = sum(quantization_errors) / len(quantization_errors)
 
+    print(f"average quantization error: {avg_quantization_error:.6f}")
     print(f"number of parameters: {n_params}")
     print(f"number of binary parameters: {n_bin_params}")
     print(f"number of binary modules: {n_binary_modules}")
@@ -69,6 +81,7 @@ def quantize_moondream(model, start_skip=1, last_skip=0, quantization="binary", 
 
     print(f"estimated original size: {estimated_model_size_gb:.3f} GB")
     print(f"estimated quantized size: {estimated_quantized_model_size_gb:.3f} GB")
+    return avg_quantization_error
 
 
 def clip_binary_weights(model: nn.Module):
