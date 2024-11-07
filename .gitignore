@@ -210,3 +210,5 @@ send_to.sh
 results*
 *.csv
 *.dat
+
+tokenizer_pretrained
