@@ -142,7 +142,7 @@ def tf_attention(query, value, key, attn_mask=True, is_causal=False):
 
 
 def get_usable_length(past_key_value, new_seq_length, max_length=2000):
-    previous_seq_length = tf.shape(past_key_value)[-2]
+    previous_seq_length = tf.shape(past_key_value)[0]
     if previous_seq_length + new_seq_length > max_length:
         return max_length - new_seq_length
     return previous_seq_length
@@ -264,8 +264,35 @@ class PhiAttention(Layer):
         #     "partial_rotation_size": self.rotary_emb.dim,
         # }
 
-        past_key_value = tf.concat([past_key_value[self.layer_idx], tf.stack([key_states, value_states], axis=0)], axis=-2)
-        key_states, value_states = tf.unstack(past_key_value, 2, axis=0)
+        # seq, layer, kv, bsz, num_heads, head_dim
+        layer_past_key_value = past_key_value[:, self.layer_idx]
+        # seq, kv, bsz, num_heads, head_dim
+
+        # past_keys, past_values = tf.unstack(layer_past_key_value, 2, axis=1) # TFLite does not like tensor of size 0 as input of this operator
+        past_keys = layer_past_key_value[:, 0]
+        past_values = layer_past_key_value[:, 1]
+        # seq, bsz, num_heads, head_dim
+
+        ordering = (1, 2, 0, 3)
+        past_keys = tf.transpose(past_keys, ordering)
+        past_values = tf.transpose(past_values, ordering)
+
+        # previous
+        # past_key_value = tf.concat([layer_past_key_value, tf.stack([key_states, value_states], axis=0)], axis=-2)
+        # key_states, value_states = tf.unstack(past_key_value, 2, axis=0)
+
+
+        # bsz, num_heads, q_len, head_dim
+        next_keys = key_states
+        next_values = value_states
+
+        reversed_ordering = (2, 0, 1, 3)
+        next_keys = tf.transpose(next_keys, reversed_ordering)
+        next_values = tf.transpose(next_values, reversed_ordering)
+
+
+        key_states = tf.concat([past_keys, key_states], axis=-2)
+        value_states = tf.concat([past_values, value_states], axis=-2)
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
@@ -291,7 +318,7 @@ class PhiAttention(Layer):
         if self.layer_idx == DEBUG_IDX:
             tf.print("out proj", attn_output)
 
-        return attn_output, past_key_value, key_states, value_states
+        return attn_output, next_keys, next_values
 
 
 class PhiDecoderLayer(Layer):
@@ -335,7 +362,7 @@ class PhiDecoderLayer(Layer):
         # if self.mixer.layer_idx == 0:
         #     print("ln", hidden_states)
         # Self Attention
-        attn_outputs, present_key_value, ks, vs = self.mixer(
+        attn_outputs, ks, vs = self.mixer(
             hidden_states=hidden_states,
             attention_mask=attention_mask,
             position_ids=position_ids,
@@ -346,7 +373,7 @@ class PhiDecoderLayer(Layer):
         # print("mlp", feed_forward_hidden_states)
         hidden_states = attn_outputs + feed_forward_hidden_states + residual
         outputs = hidden_states
-        return outputs, present_key_value, ks, vs
+        return outputs, ks, vs
 
 
 class Embedding(Layer):

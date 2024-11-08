@@ -57,7 +57,7 @@ class PhiModel(keras.Model):
 
     # @tf.function
     def empty_cache(self):
-        return tf.zeros((len(self.h), 2, 1, 32, 0, 64))
+        return tf.zeros((0, len(self.h), 2, 1, 32, 64))
 
     # @tf.function
     def call(
@@ -67,7 +67,7 @@ class PhiModel(keras.Model):
     ):
         batch_size = tf.shape(inputs_embeds)[0]
         seq_length = tf.shape(inputs_embeds)[1]
-        past_key_values_length = tf.shape(past_key_values)[-2]
+        past_key_values_length = tf.shape(past_key_values)[0]
 
         position_ids = tf.range(
             past_key_values_length,
@@ -88,7 +88,7 @@ class PhiModel(keras.Model):
         # decoder layers
         all_kv_states = []
         for decoder_layer in self.h:
-            hidden_states, present_kv, ks, vs = decoder_layer(
+            hidden_states, ks, vs = decoder_layer(
                 hidden_states,
                 attention_mask=attention_mask,
                 position_ids=position_ids,
@@ -98,6 +98,9 @@ class PhiModel(keras.Model):
             all_kv_states.append(tf.stack([ks, vs], axis=0))
             pass
         all_kv_states = tf.stack(all_kv_states, axis=0)
+        # layer, kv, batch, head, seq_length, head_features
+
+        all_kv_states = tf.transpose(all_kv_states, perm=[4, 0, 1, 2, 3, 5])
 
         next_cache = all_kv_states
 

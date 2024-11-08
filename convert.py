@@ -114,7 +114,7 @@ inp_ids = tf.random.uniform((1, 6), maxval=50000, dtype=tf.int64)
 empty_cache_fn = tf.function(tf_moondream.empty_cache)
 compute_embeddings_fn = tf.function(tf_moondream.compute_embeddings, input_signature=[tf.TensorSpec(shape=(1, None), dtype=tf.int64)])
 call_fn = tf.function(tf_moondream.call, input_signature=[tf.TensorSpec(shape=(1, None, 2048), dtype=tf.float32),
-                                                          tf.TensorSpec(shape=(24, 2, 1, 32, None, 64), dtype=tf.float32)])
+                                                          tf.TensorSpec(shape=(None, 24, 2, 1, 32, 64), dtype=tf.float32)])
 
 inp = tf.convert_to_tensor(compute_embeddings_fn(inp_ids.numpy()).numpy())
 empty_cache = tf.convert_to_tensor(empty_cache_fn().numpy())

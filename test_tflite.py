@@ -207,7 +207,11 @@ def inference_loop(prompt, image_embed, cache, tokenizer):
             print(prompt, end="", flush=True)
         if i <= 1:
             time_bef = time.time()
-        logits, cache = predict(None, embeddings=embs, cache=cache)
+        logits, newcache = predict(None, embeddings=embs, cache=cache)
+        
+        # cache = newcache
+        cache = np.concatenate((cache, newcache), axis=0)
+
         next_token = logits[0, -1, :].argmax()
         if next_token == tokenizer.unk_token_id:
             break
