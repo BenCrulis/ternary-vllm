@@ -249,12 +249,12 @@ class PhiAttention(Layer):
             key_states[..., : self.rotary_emb.dim],
             key_states[..., self.rotary_emb.dim :],
         )
-        # [batch_size, seq_length, num_heads, head_dim // config.partial_rotary_factor]
+        # [batch_size, num_heads, seq_length, head_dim // config.partial_rotary_factor]
         query_rot, key_rot = apply_rotary_pos_emb(
             query_rot, key_rot, cos, sin, position_ids
         )
         # print("query rot", query_rot)
-        # [batch_size, seq_length, num_heads, head_dim]
+        # [batch_size, num_heads, seq_length, head_dim]
         query_states = tf.concat((query_rot, query_pass), axis=-1)
         key_states = tf.concat((key_rot, key_pass), axis=-1)
 
